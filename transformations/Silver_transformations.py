@@ -5,6 +5,8 @@ from pyspark.sql.types import DoubleType, IntegerType, StringType, StructType, S
 
 from utilities.utils import build_ground_timezone_map, apply_timezone_and_utc, get_full_name
 
+CATALOG = spark.conf.get("pipeline.catalog", "T20_catalog_dev_dlt") 
+
 # COMMAND ----------
 # DBTITLE 1,SILVER — match_players (Streaming Table)
 # Dedup via dropDuplicates — DLT tracks seen keys across micro-batches

@@ -10,6 +10,7 @@ from pyspark.sql.functions import (
 from pyspark.sql.types import DoubleType, IntegerType, StringType, StructType, StructField, LongType, BooleanType
 from pyspark.sql.window import Window
 
+CATALOG = spark.conf.get("pipeline.catalog", "T20_catalog_dev_dlt") 
 
 # COMMAND ----------
 # DBTITLE 1,GOLD — gold_match_events (Materialized View)

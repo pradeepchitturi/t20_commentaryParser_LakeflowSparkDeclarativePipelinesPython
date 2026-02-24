@@ -1,4 +1,3 @@
-# Databricks notebook source
 # utilities/utils.py
 #
 # Shared configuration, UDFs, and helper functions for the Cricket Commentary
@@ -9,8 +8,6 @@
 #
 # Or reference this file alongside transformations in the Pipeline's
 # "Source code" paths — Databricks will execute all listed paths.
-
-# COMMAND ----------
 
 from pyspark.sql.functions import (
     col, when, regexp_extract, regexp_replace, trim, first, create_map,
@@ -26,8 +23,6 @@ from pyspark.sql.window import Window
 import json
 import time
 
-# COMMAND ----------
-# DBTITLE 1, Pipeline Parameters
 # ── Configure these in the DLT Pipeline UI ──────────────────────────────────
 # Settings -> Configuration -> Add key/value pairs
 #
@@ -49,9 +44,6 @@ SCHEMA_BASE  = "abfss://cricinfo-mens-international@adlschitturidemo.dfs.core.wi
 BRONZE = "bronze"
 SILVER = "silver"
 GOLD   = "gold"
-
-# COMMAND ----------
-# DBTITLE 1, Team Abbreviation Map
 
 KNOWN_TEAM_ABBREVS = {
     "USA": "United States Of America",
@@ -80,9 +72,6 @@ KNOWN_TEAM_ABBREVS = {
     "CAN": "Canada",
     "UGA": "Uganda",
 }
-
-# COMMAND ----------
-# DBTITLE 1, get_full_name UDF
 
 @udf(StringType())
 def get_full_name(short_name, name_list):
@@ -152,9 +141,6 @@ def get_full_name(short_name, name_list):
                 return name
 
     return short_name
-
-# COMMAND ----------
-# DBTITLE 1, Timezone Geocoding Helper
 
 def build_ground_timezone_map(df_metadata):
     """
