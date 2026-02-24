@@ -11,7 +11,7 @@ from utilities.utils import build_ground_timezone_map, apply_timezone_and_utc, g
 # using its internal state store, so duplicates are caught across runs too.
 
 @dp.table(
-    name="t20_catalog_dev_dlt.silver.match_players",
+    name=f"{CATALOG}.silver.match_players",
     comment="Deduplicated player records per match. Source: bronze.match_players.",
     table_properties={
         "quality":        "silver",
@@ -26,7 +26,7 @@ from utilities.utils import build_ground_timezone_map, apply_timezone_and_utc, g
 })
 def match_players():
     return (
-        dp.read_stream("t20_catalog_dev_dlt.bronze.match_players")
+        dp.read_stream(f"{CATALOG}.bronze.match_players")
         # dropDuplicates() is stateful in DLT streaming — dedup is guaranteed
         # across pipeline runs, not just within one micro-batch
         .dropDuplicates(["matchid", "player_name", "team"])
@@ -49,7 +49,7 @@ def match_players():
 #   - Streaming output is from dlt.read_stream() below
 
 @dp.table(
-    name="t20_catalog_dev_dlt.silver.match_metadata",
+    name=f"{CATALOG}.silver.match_metadata",
     comment="Enriched match metadata: toss split, UTC times, timezone, team name resolution.",
     table_properties={
         "quality":        "silver",
@@ -64,18 +64,18 @@ def match_players():
 })
 def match_metadata():
     # ── Timezone map ── built from ALL bronze grounds (batch, driver-side) ──
-    df_bronze_full = dp.read("t20_catalog_dev_dlt.bronze.match_metadata")
+    df_bronze_full = dp.read(f"{CATALOG}.bronze.match_metadata")
     tz_map = build_ground_timezone_map(df_bronze_full)
 
     # ── Static player lookup for team abbreviation resolution ──
-    df_players = dp.read("t20_catalog_dev_dlt.silver.match_players")
+    df_players = dp.read(f"{CATALOG}.silver.match_players")
     df_match_team_names = (
         df_players.groupBy("matchid")
         .agg(collect_set("team").alias("team_names"))
     )
 
     # ── Streaming source: new Bronze metadata rows only ──
-    df = dp.read_stream("t20_catalog_dev_dlt.bronze.match_metadata")
+    df = dp.read_stream(f"{CATALOG}.bronze.match_metadata")
 
     # Dedup: one record per matchid
     df = df.dropDuplicates(["matchid"])
@@ -146,7 +146,7 @@ def match_metadata():
 #   ✗ wickets_lost    → computed in gold.match_events (gold_aggregations.py)
 
 @dlt.table(
-    name="t20_catalog_dev_dlt.silver.match_events",
+    name=f"{CATALOG}.silver.match_events",
     comment="Streaming: runs, dismissals, name resolution. innings_score/wickets_lost in gold.match_events.",
     table_properties={
         "quality":        "silver",
@@ -164,7 +164,7 @@ def match_metadata():
 })
 def match_events():
     # ── Static: full Silver players table for name lookup ──────────────────
-    df_players = dlt.read("t20_catalog_dev_dlt.silver.match_players")
+    df_players = dlt.read(f"{CATALOG}.silver.match_players")
     df_match_names = (
         df_players.groupBy("matchid")
         .agg(
@@ -174,7 +174,7 @@ def match_events():
     )
 
     # ── Streaming: new Bronze events only ──────────────────────────────────
-    df = dlt.read_stream("t20_catalog_dev_dlt.bronze.match_events")
+    df = dlt.read_stream(f"{CATALOG}.bronze.match_events")
 
     # ── Event column parsing: "Bowler to Batsman, Score" ───────────────────
     EVENT_PATTERN = r"([A-Za-z\s\'\\-]*)\sto\s([A-Za-z\s\'\\-]*)\,\s+([0-9A-Za-z\,\s\(\)]*)"
