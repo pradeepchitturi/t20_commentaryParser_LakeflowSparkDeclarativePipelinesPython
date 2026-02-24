@@ -15,7 +15,7 @@ from pyspark.sql.window import Window
 # DBTITLE 1,GOLD — gold_match_events (Materialized View)
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.match_events",
+    name=f"{CATALOG}.gold.match_events",
     comment="silver_match_events enriched with innings_score + wickets_lost (window sums).",
     table_properties={
         "quality":        "gold",
@@ -28,7 +28,7 @@ from pyspark.sql.window import Window
     "wickets_range":              "wickets_lost >= 0 AND wickets_lost <= 10"
 })
 def match_events():
-    df = dp.read("t20_catalog_dev_dlt.silver.match_events")
+    df = dp.read(f"{CATALOG}.silver.match_events")
 
     innings_window = (
         Window
@@ -59,13 +59,13 @@ def match_events():
 # DBTITLE 1,GOLD — gold_batting_stats_per_match
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.batting_stats_per_match",
+    name=f"{CATALOG}.gold.batting_stats_per_match",
     comment="Batting stats per batsman per match: runs, balls faced, SR, run distribution.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_batting_stats_per_match():
-    df_events   = dp.read("t20_catalog_dev_dlt.gold.match_events")
-    df_metadata = dp.read("t20_catalog_dev_dlt.silver.match_metadata")
+    df_events   = dp.read(f"{CATALOG}.gold.match_events")
+    df_metadata = dp.read(f"{CATALOG}.silver.match_metadata")
     df = df_events.join(
         df_metadata.select("matchid", "series", "season"), "matchid", "left"
     )
@@ -124,12 +124,12 @@ def gold_batting_stats_per_match():
 # DBTITLE 1,GOLD — gold_batting_stats_per_series
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.batting_stats_per_series",
+    name=f"{CATALOG}.gold.batting_stats_per_series",
     comment="Batting stats per batsman per series: milestone counts, batting average.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_batting_stats_per_series():
-    df = dp.read("t20_catalog_dev_dlt.gold.batting_stats_per_match")
+    df = dp.read(f"{CATALOG}.gold.batting_stats_per_match")
     return (
         df.groupBy("series", "season", "batsman")
         .agg(
@@ -171,12 +171,12 @@ def gold_batting_stats_per_series():
 # DBTITLE 1,GOLD — gold_batting_stats_overall
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.batting_stats_overall",
+    name=f"{CATALOG}.gold.batting_stats_overall",
     comment="Career batting stats per batsman across all series.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_batting_stats_overall():
-    df = dp.read("t20_catalog_dev_dlt.gold.batting_stats_per_series")
+    df = dp.read(f"{CATALOG}.gold.batting_stats_per_series")
     return (
         df.groupBy("batsman")
         .agg(
@@ -219,13 +219,13 @@ def gold_batting_stats_overall():
 # DBTITLE 1,GOLD — gold_bowling_stats_per_match
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.bowling_stats_per_match",
+    name=f"{CATALOG}.gold.bowling_stats_per_match",
     comment="Bowling stats per bowler per match. Legbyes/byes excluded from runs conceded.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_bowling_stats_per_match():
-    df_events   = dp.read("t20_catalog_dev_dlt.gold.match_events")
-    df_metadata = dp.read("t20_catalog_dev_dlt.silver.match_metadata")
+    df_events   = dp.read(f"{CATALOG}.gold.match_events")
+    df_metadata = dp.read(f"{CATALOG}.silver.match_metadata")
     df = (
         df_events.filter(col("bowler").isNotNull())
         .join(df_metadata.select("matchid", "series", "season"), "matchid", "left")
@@ -310,12 +310,12 @@ def gold_bowling_stats_per_match():
 # DBTITLE 1,GOLD — gold_bowling_stats_per_series
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.bowling_stats_per_series",
+    name=f"{CATALOG}.gold.bowling_stats_per_series",
     comment="Bowling stats per bowler per series, including 5-wicket haul counts.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_bowling_stats_per_series():
-    df = dp.read("t20_catalog_dev_dlt.gold.bowling_stats_per_match")
+    df = dp.read(f"{CATALOG}.gold.bowling_stats_per_match")
     return (
         df.groupBy("series", "season", "bowler")
         .agg(
@@ -367,12 +367,12 @@ def gold_bowling_stats_per_series():
 # DBTITLE 1,GOLD — gold_bowling_stats_overall
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.bowling_stats_overall",
+    name=f"{CATALOG}.gold.bowling_stats_overall",
     comment="Career bowling stats per bowler across all series.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_bowling_stats_overall():
-    df = dp.read("t20_catalog_dev_dlt.gold.bowling_stats_per_series")
+    df = dp.read(f"{CATALOG}.gold.bowling_stats_per_series")
     return (
         df.groupBy("bowler")
         .agg(
@@ -425,12 +425,12 @@ def gold_bowling_stats_overall():
 # DBTITLE 1,GOLD — gold_match_summary
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.match_summary",
+    name=f"{CATALOG}.gold.match_summary",
     comment="Match-level summary: teams, venue, toss, winner, officials.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_match_summary():
-    df = dp.read("t20_catalog_dev_dlt.silver.match_metadata")
+    df = dp.read(f"{CATALOG}.silver.match_metadata")
     return (
         df
         .withColumn("winner",
@@ -464,14 +464,14 @@ def gold_match_summary():
 # DBTITLE 1,GOLD — gold_player_team_scd2 (SCD Type 2)
 
 @dp.table(
-    name="t20_catalog_dev_dlt.gold.player_team_scd2",
+    name=f"{CATALOG}.gold.player_team_scd2",
     comment="SCD Type 2: player-team relationship with start/end dates and active flag.",
     table_properties={"quality": "gold", "pipeline.layer": "gold"}
 )
 def gold_player_team_scd2():
-    df_events   = dp.read("t20_catalog_dev_dlt.gold.match_events")
-    df_metadata = dp.read("t20_catalog_dev_dlt.silver.match_metadata")
-    df_players  = dp.read("t20_catalog_dev_dlt.silver.match_players")
+    df_events   = dp.read(f"{CATALOG}.gold.match_events")
+    df_metadata = dp.read(f"{CATALOG}.silver.match_metadata")
+    df_players  = dp.read(f"{CATALOG}.silver.match_players")
 
     df_bat_app = (
         df_events

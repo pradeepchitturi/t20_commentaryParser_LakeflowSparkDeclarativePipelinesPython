@@ -2,9 +2,9 @@
 from pyspark import pipelines as dp
 from pyspark.sql.functions import *
 from pyspark.sql.types import DoubleType, IntegerType, StringType, StructType, StructField, LongType, BooleanType
-
 from utilities import utils
 
+CATALOG = spark.conf.get("pipeline.catalog", "T20_catalog_dev_dlt") 
 
 # Override defaults with DLT pipeline configuration values
 utils.SOURCE_PATH = spark.conf.get("pipeline.source_path", utils.SOURCE_PATH)
@@ -14,7 +14,7 @@ utils.SCHEMA_BASE = spark.conf.get("pipeline.schema_location_base", utils.SCHEMA
 # DBTITLE 1,BRONZE — match_events (ball-by-ball CSV)
 
 @dp.table(
-    name="t20_catalog_dev_dlt.bronze.match_events",
+    name=f"{CATALOG}.bronze.match_events",
     comment="Raw ball-by-ball match events ingested from ADLS CSV files via Auto Loader.",
     table_properties={
         "quality":                    "bronze",
@@ -60,7 +60,7 @@ def match_events():
 # DBTITLE 1,BRONZE — match_metadata (match-level JSON)
 
 @dp.table(
-    name="t20_catalog_dev_dlt.bronze.match_metadata",
+    name=f"{CATALOG}.bronze.match_metadata",
     comment="Raw match metadata (venue, toss, result, officials) from ADLS JSON files.",
     table_properties={
         "quality":                    "bronze",
@@ -117,7 +117,7 @@ def match_metadata():
 # DBTITLE 1,BRONZE — match_players (player-level CSV)
 
 @dp.table(
-    name="t20_catalog_dev_dlt.bronze.match_players",
+    name=f"{CATALOG}.bronze.match_players",
     comment="Raw player lineup records per match from ADLS CSV files.",
     table_properties={
         "quality":                    "bronze",
